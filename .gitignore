@@ -1,0 +1,22 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+wandb/
+
+# Generated checkpoints and downloaded pretrained weights.
+*.pt
+*.pth
+*.pkl
+*.ckpt
+pretrained_models/*.pt
+pretrained_models/*.pth
+
+# Zip file too large for GitHub's 100 MB limit
+pretrained_models/pretrained_models.zip
+
+
+# Local virtual environments.
+.venv/
+venv/
+env/
