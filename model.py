@@ -300,11 +300,18 @@ class FeedForwardLayer(nn.Module):
 
         # ========= TODO : START ========= #
 
-        self.fc1 = ...
-        self.activation = ...
-        self.fc2 = ...
-        self.fc2 = ...
-        self.dropout = ...
+        self.fc1 = nn.Linear(
+            in_features=input_dim,
+            out_features=feedforward_dim,
+            bias=True,
+        )
+        self.activation = nn.GELU()
+        self.fc2 = nn.Linear(
+            in_features=feedforward_dim, 
+            out_features=input_dim, 
+            bias=True,
+        )
+        self.dropout = nn.Dropout(p=dropout)
 
         # ========= TODO : END ========= #
 
@@ -323,7 +330,11 @@ class FeedForwardLayer(nn.Module):
 
         ### ========= TODO : START ========= ###
 
-        raise NotImplementedError
+        x = self.fc1(x)
+        x = self.activation(x)
+        x = self.fc2(x)
+        x = self.dropout(x)
+        return x
 
         ### ========= TODO : END ========= ###
 
@@ -366,7 +377,8 @@ class LayerNorm(nn.Module):
         var = None
         # ========= TODO : START ========= #
 
-        raise NotImplementedError
+        var = torch.var(input, dim=-1, keepdim=True, correction=0)
+        mean = torch.mean(input, dim=-1, keepdim=True)
 
         # ========= TODO : END ========= #
 
