@@ -249,18 +249,21 @@ class MultiHeadAttention(nn.Module):
 
         # ========= TODO : START ========= #
 
-        # Use setattr to implement the heads dynamically.
-        # self.head_{i} = ...
+        # Determine the dimension of the head
         head_dim = input_dim // num_heads
         
-        for i in range(num_heads):
+        # Dynamically create num_heads SingleHeadAttention layers
+        for i in range(self.num_heads):
             setattr(self, f'head_{i}', SingleHeadAttention(
                 input_dim=input_dim,
                 output_key_query_dim=head_dim,
                 output_value_dim=head_dim,
                 dropout=dropout
                 ))
+        # Output linear layer
         self.out = nn.Linear(self.input_dim, self.input_dim, bias=True)
+        
+        # Dropout Layer
         self.dropout = nn.Dropout(dropout)
         
         # ========= TODO : END ========= #
@@ -280,14 +283,24 @@ class MultiHeadAttention(nn.Module):
 
         # ========= TODO : START ========= #
 
+        # Lets set up a list so we can collect the head outputs
         head_outputs = []
+
+        # Run each head on the FULL input x and collect outputs
         for i in range(self.num_heads):
-            head = getattr(self, f'head_{i}')
-            head_outputs.append(head(x))
+            head = getattr(self, f'head_{i}')  # Retrieve head_i
+            head_outputs.append(head(x))       # Each head output has size: (B, T, head_dim)
             
-        x = torch.cat(head_outputs, dim=-1)
-        x = self.out(x)
-        x = self.dropout(x)
+        # Concatenate all head outputs along the embedding dimension
+        x = torch.cat(head_outputs, dim=-1)    # Size: (B, T, head_dim*num_heads)
+                                               # Where head_dim*num_heads = input_dim 
+
+        # Pass through output linear layer
+        x = self.out(x)                        # Size: (B, T, input_dim)
+
+        # Apply dropout
+        x = self.dropout(x)                    # Size: (B, T, input_dim)
+        
         return x
 
         # ========= TODO : END ========= #
