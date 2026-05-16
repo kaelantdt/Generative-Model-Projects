@@ -171,7 +171,7 @@ class SingleHeadAttention(nn.Module):
         self.query = nn.Linear(self.input_dim, self.output_key_query_dim, bias=False )
         self.value = nn.Linear(self.input_dim, self.output_value_dim, bias=False )
         self.dropout = nn.Dropout(dropout)
-        causal_mask = torch.tril(torch.ones(max_len, max_len))
+        causal_mask = torch.triu(torch.ones(max_len, max_len), diagonal=1)
         # ========= TODO : END ========= #
 
         self.register_buffer(
@@ -209,7 +209,7 @@ class SingleHeadAttention(nn.Module):
         
         # Trim causal mask to the input size and use to block future tokens
         mask = self.causal_mask[:T, :T]   # Note T changes based on the context length                      
-        scores = scores.masked_fill(mask == 0, float('-inf')) 
+        scores = scores.masked_fill(mask == 1, float('-inf')) 
         
         # Apply Softmax
         attn = nn.functional.softmax(scores, dim=-1)   # Shape is: (B, T, T)
