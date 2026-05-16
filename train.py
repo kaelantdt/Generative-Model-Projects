@@ -105,7 +105,7 @@ def solver(model_name):
         optimizer.zero_grad()
 
         # Do the forward pass
-        logits = model(target)
+        logits = model(context)
         
         # Reshape tensors to fit PyTorch's cross_entropy expectations
         train_loss = loss(logits, target.view(-1))
@@ -132,15 +132,13 @@ def solver(model_name):
             with torch.no_grad():
                 
                 # Perform validation logic
-                for j, (eval_context, eval_target) in enumerate (eval_dataloader):
-                  if j==i:
-                    eval_context = eval_context.to(device)
-                    eval_target = eval_target.to(device)
-                    eval_logits = model(eval_target)
-                    eval_loss = loss(eval_logits, eval_target.view(-1))
-                    del eval_context, eval_target # Clear memory
-                    break
-            
+                eval_context, eval_target = next(iter(eval_dataloader))  # Grab one batch of eval data
+                eval_context = eval_context.to(device)
+                eval_target = eval_target.to(device)
+                eval_logits = model(eval_context)
+                eval_loss = loss(eval_logits, eval_target.view(-1))
+                del eval_context, eval_target # Clear memory
+
             model.train()
             
             ### ======== TODO : END ========= ###
