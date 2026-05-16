@@ -1,4 +1,4 @@
-## Building and training a bigram language model
+### Building and training a bigram language model
 from functools import partial
 import math
 
@@ -33,9 +33,6 @@ class BigramLanguageModel(nn.Module):
         super().__init__()
         # ========= TODO : START ========= #
 
-        # self.embeddings = ...
-        # self.linear = ...
-        # self.dropout = ...
         self.embeddings = nn.Embedding(num_embeddings=config.vocab_size, embedding_dim=config.embed_dim)
         self.linear = nn.Linear(in_features=config.embed_dim, out_features=config.vocab_size, bias=True)
         self.dropout = nn.Dropout(config.dropout)
@@ -170,12 +167,11 @@ class SingleHeadAttention(nn.Module):
 
         # ========= TODO : START ========= #
 
-        self.key = ...
-        self.query = ...
-        self.value = ...
-        self.dropout = ...
-        causal_mask = ...
-
+        self.key = nn.Linear(self.input_dim, self.output_key_query_dim, bias=False )
+        self.query = nn.Linear(self.input_dim, self.output_key_query_dim, bias=False )
+        self.value = nn.Linear(self.input_dim, self.output_value_dim, bias=False )
+        self.dropout = nn.Dropout(dropout)
+        causal_mask = torch.tril(torch.ones(max_len, max_len))
         # ========= TODO : END ========= #
 
         self.register_buffer(
@@ -200,7 +196,30 @@ class SingleHeadAttention(nn.Module):
 
         # ========= TODO : START ========= #
 
-        raise NotImplementedError
+        B, T, D = x.shape  # batch_size, num_tokens, token_dim
+        
+        # Project x onto Q, K, and V
+        Q = self.query(x)   # Shape is: (B, T, output_key_query_dim)
+        K = self.key(x)     # Shape is: (B, T, output_key_query_dim)
+        V = self.value(x)   # Shape is: (B, T, output_value_dim)
+        
+        # Compute attention scores.
+        scale = self.output_key_query_dim ** -0.5 # Let's compute this here for readability
+        scores = Q @ K.transpose(-2, -1) * scale  # Shape is: (B, T, T)
+        
+        # Trim causal mask to the input size and use to block future tokens
+        mask = self.causal_mask[:T, :T]   # Note T changes based on the context length                      
+        scores = scores.masked_fill(mask == 0, float('-inf')) 
+        
+        # Apply Softmax
+        attn = nn.functional.softmax(scores, dim=-1)   # Shape is: (B, T, T)
+        
+        # Apply Dropout
+        attn = self.dropout(attn)
+        
+        # Calculate weighted sum of values
+        out = attn @ V     # Shape is: (B, T, output_value_dim)
+        return out
 
         # ========= TODO : END ========= #
 
