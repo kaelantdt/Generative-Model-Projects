@@ -85,6 +85,7 @@ class BigramLanguageModel(nn.Module):
         elif isinstance(module, nn.Embedding):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
+    @torch.no_grad()
     def generate(self, context, max_new_tokens=100):
         """
         Use the model to generate new tokens given a context.
@@ -106,14 +107,17 @@ class BigramLanguageModel(nn.Module):
         """
 
         ### ========= TODO : START ========= ###
+        
+        context = context.unsqueeze(0)  # (seq_len,) -> (1, seq_len)
 
         for step in range(max_new_tokens):
-          logits = model(context)
-          last_logits = logits[:, -1, :]
-          probs = softmax(last_logits)
-          next_token = multinomial(probs)
-          context = torch.concat(context, next_token)
+            last_token = context[:, -1:]          # Get the last token
+            logits = self(last_token)             # Forward pass on last token only
+            probs = nn.functional.softmax(logits, dim=-1)  # Compute softmax over vocab dim
+            next_token = torch.multinomial(probs, num_samples=1)  # (batch, 1)
+            context = torch.cat((context, next_token), dim=1)     # append along seq dim
 
+        return context.squeeze(0)  # (1, seq_len) -> (seq_len,) to match input shape  
         ### ========= TODO : END ========= ###
 
 
