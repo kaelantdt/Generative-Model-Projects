@@ -251,9 +251,18 @@ class MultiHeadAttention(nn.Module):
 
         # Use setattr to implement the heads dynamically.
         # self.head_{i} = ...
-        self.out = ...
-        self.dropout = ...
-
+        head_dim = input_dim // num_heads
+        
+        for i in range(num_heads):
+            setattr(self, f'head_{i}', SingleHeadAttention(
+                input_dim=input_dim,
+                output_key_query_dim=head_dim,
+                output_value_dim=head_dim,
+                dropout=dropout
+                ))
+        self.out = nn.Linear(self.input_dim, self.input_dim, bias=True)
+        self.dropout = nn.Dropout(dropout)
+        
         # ========= TODO : END ========= #
 
     def forward(self, x):
@@ -271,7 +280,15 @@ class MultiHeadAttention(nn.Module):
 
         # ========= TODO : START ========= #
 
-        raise NotImplementedError
+        head_outputs = []
+        for i in range(self.num_heads):
+            head = getattr(self, f'head_{i}')
+            head_outputs.append(head(x))
+            
+        x = torch.cat(head_outputs, dim=-1)
+        x = self.out(x)
+        x = self.dropout(x)
+        return x
 
         # ========= TODO : END ========= #
 
