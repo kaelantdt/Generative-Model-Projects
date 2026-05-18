@@ -108,7 +108,11 @@ def solver(model_name):
         logits = model(context)
         
         # Reshape tensors to fit PyTorch's cross_entropy expectations
-        train_loss = loss(logits, target.view(-1))
+        if logits.dim() == 3: # miniGPT logits
+            B, T, V = logits.shape
+            train_loss = loss(logits.view(B*T, V), target.view(-1))
+        else: # bigram logits
+            train_loss = loss(logits, target.view(-1))
           
         # Backward
         train_loss.backward()
@@ -136,7 +140,13 @@ def solver(model_name):
                 eval_context = eval_context.to(device)
                 eval_target = eval_target.to(device)
                 eval_logits = model(eval_context)
-                eval_loss = loss(eval_logits, eval_target.view(-1))
+
+                if eval_logits.dim() == 3: # miniGPT logits
+                    B, T, V = eval_logits.shape
+                    eval_loss = loss(eval_logits.view(B*T, V), eval_target.view(-1))
+                else: # bigram logits
+                    eval_loss = loss(eval_logits, eval_target.view(-1))
+                    
                 del eval_context, eval_target # Clear memory
 
             model.train()

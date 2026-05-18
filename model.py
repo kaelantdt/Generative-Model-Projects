@@ -549,8 +549,23 @@ class MiniGPT(nn.Module):
         """
 
         ### ========= TODO : START ========= ###
+        # All we do is grab our embeddings for x
+        
+        B = x.shape[0]
+        T = x.shape[1]
+        # we grab token embeddings, positional embeddings, perform dropout
+        tok_emb = self.vocab_embedding(x)                     # (B, T, embed_dim)
+        pos_emb = self.positional_embedding(self.pos[:T])     # (T, embed_dim)
+        x = self.embed_dropout(tok_emb + pos_emb)             # (B, T, embed_dim)
 
-        raise NotImplementedError
+        # Pass through each dynamic transformer layer sequencially
+        for layer in self.transformer_layers:
+            x = layer(x)                                      # (B, T, embed_dim)
+
+        # layer norm and final layer give us logits
+        x = self.prehead_norm(x)                              # (B, T, embed_dim)
+        logits = self.head(x)
+        return logits
 
         ### ========= TODO : END ========= ###
 
@@ -599,6 +614,19 @@ class MiniGPT(nn.Module):
 
         ### ========= TODO : START ========= ###
 
-        raise NotImplementedError
+        context = context.unsqueeze(0)  # (T,) -> (1, T)
+
+        for _ in range(max_new_tokens):
+            context_trimmed = context[:, -self.config.context_length:]
+
+            logits = self(context_trimmed)           # (1, T, vocab_size)
+            last_logits = logits[:, -1, :]           # (1, vocab_size) — last token's logits only
+
+            probs = nn.functional.softmax(last_logits, dim=-1)
+            next_token = torch.multinomial(probs, num_samples=1)  # (1, 1)
+
+            context = torch.cat((context, next_token), dim=1)     # append to sequence
+
+        return context.squeeze(0)  # (1, T+max_new_tokens) -> (T+max_new_tokens,)
 
         ### ========= TODO : END ========= ###

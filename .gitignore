@@ -15,7 +15,6 @@ pretrained_models/*.pth
 # Zip file too large for GitHub's 100 MB limit
 pretrained_models/pretrained_models.zip
 
-
 # Local virtual environments.
 .venv/
 venv/
